@@ -1,0 +1,116 @@
+package sf.browser.utils;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+import android.os.Environment;
+
+/**
+ * Utilities for I/O reading and writing.
+ * @author user
+ *
+ */
+public class IOUtils {
+
+	private static final String APPLICATION_FOLDER = "sfbrowser";
+	private static final String DOWNLOAD_FOLDER = "downloads";
+	private static final String BOOKMARKS_EXPORT_FOLDER = "bookmarks-exports";
+
+	/**
+	 * Get the application folder on the SD Card. Create it if not present
+	 * @return
+	 */
+	public static File getApplicationFolder() {
+		File root = Environment.getExternalStorageDirectory();
+		if (root.canWrite()) {
+			File folder = new File(root, APPLICATION_FOLDER);
+			if (!folder.exists()) {
+				folder.mkdir();
+			}
+			return folder;
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Get the application download folder on the SD Card. Create it if not present.
+	 * @return The application download folder
+	 */
+	public static File getDownloadFolder() {
+		File root = getApplicationFolder();
+
+		if (root != null) {
+			File folder = new File(root, DOWNLOAD_FOLDER);
+			
+			if (!folder.exists()) {
+				folder.mkdir();
+			}
+			
+			return folder;
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Get the application folder for bookmarks export. Create it if not present.
+	 * @return The application folder for bookmarks export
+	 */
+	public static File getBookmarksExportFolder() {
+		File root = getApplicationFolder();
+
+		if (root != null) {
+			File folder = new File(root, BOOKMARKS_EXPORT_FOLDER);
+
+			if (!folder.exists()) {
+				folder.mkdir();
+			}
+
+			return folder;
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Get the list of xml files in the bookmark export folder.
+	 * @return The list of xml files in the bookmark export folder
+	 */
+	public static List<String> getExportedBookmarksFileList() {
+		List<String> result = new ArrayList<String>(); 
+		
+		File folder = getBookmarksExportFolder();
+
+		if (folder != null) {
+			FileFilter filter = new FileFilter() {
+				@Override
+				public boolean accept(File pathname) {
+					if (pathname.isFile() && pathname.getPath().endsWith(".xml")) {
+						return true;
+					}
+					return false;
+				}
+			};
+			
+			File[] files = folder.listFiles(filter);
+			
+			for (File file : files) {
+				result.add(file.getName());
+			}
+		}
+
+		Collections.sort(result, new Comparator<String>() {
+			@Override
+			public int compare(String lhs, String rhs) {
+				return lhs.compareTo(rhs);
+			}
+		});
+
+		return result;
+	}
+}
