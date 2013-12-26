@@ -3,6 +3,7 @@ package sf.browser.controllers;
 import java.util.ArrayList;
 import java.util.List;
 
+import sf.browser.model.DbAdapter;
 import sf.browser.model.items.DownloadItem;
 import sf.browser.ui.components.CustomWebView;
 
@@ -129,7 +130,7 @@ public final class Controller {
 	public List<String> getMobileViewUrlList(Context context) {
 		if (this.mMobileViewUrlList == null) {
 			DbAdapter db = new DbAdapter(context);
-			db.opent();
+			db.open();
 			mMobileViewUrlList = db.getMobileViewUrlList();
 			db.close();
 		}

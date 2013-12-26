@@ -9,6 +9,7 @@ import java.util.List;
 import sf.browser.R;
 import sf.browser.model.items.BookmarkItem;
 import sf.browser.model.items.HistoryItem;
+import sf.browser.providers.BookmarksProviderWrapper;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;

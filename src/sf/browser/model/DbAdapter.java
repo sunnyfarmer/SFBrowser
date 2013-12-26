@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import sf.browser.ui.runnables.XmlHistoryBookmarksExporter;
 import sf.browser.utils.ApplicationUtils;
+import sf.browser.utils.DateUtils;
 
 import android.content.ContentValues;
 import android.content.Context;

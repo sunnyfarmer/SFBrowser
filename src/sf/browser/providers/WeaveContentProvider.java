@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
+import android.util.Log;
 
 public class WeaveContentProvider extends ContentProvider {
 
@@ -100,7 +101,11 @@ public class WeaveContentProvider extends ContentProvider {
 				return rowUri;
 			}
 
-			throw new SQLException("Failed to insert row into " + uri);
+			try {
+				throw new SQLException("Failed to insert row into " + uri);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		
 		default:
 			throw new IllegalArgumentException("Unknown URI " + uri);

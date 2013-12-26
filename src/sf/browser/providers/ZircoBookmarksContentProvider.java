@@ -24,7 +24,7 @@ public class ZircoBookmarksContentProvider extends ContentProvider {
 	private static final int DATABASE_VERSION = 1;
 	private static final String DATABASE_NAME = "bookmarks.db";
 
-	private static final String BOOKMARKS_TABLE = "bookmarks";
+	public static final String BOOKMARKS_TABLE = "bookmarks";
 
 	private static final String BOOKMARKS_TABLE_CREATE = "CREATE TABLE " + BOOKMARKS_TABLE + " (" +
 			Browser.BookmarkColumns._ID + "INTEGER PRIMARY KEY AUTOINCREMENT, " + 
@@ -101,7 +101,11 @@ public class ZircoBookmarksContentProvider extends ContentProvider {
 				mContext.getContentResolver().notifyChange(rowUri, null);
 				return rowUri;
 			}
-			throw new SQLException("Failed to insert row into " + uri);
+			try {
+				throw new SQLException("Failed to insert row into " + uri);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		default: 
 			throw new IllegalArgumentException("Unknown URI " + uri);
 		}
