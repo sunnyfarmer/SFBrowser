@@ -4,10 +4,13 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
+import sf.browser.R;
 import sf.browser.model.items.DownloadItem;
 
 import android.content.Context;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
@@ -34,7 +37,7 @@ public class DownloadListAdapter extends BaseAdapter {
 	 * Get a map of download item related to the UI text component representing the download title.
 	 * @return
 	 */
-	public Map<DownloadItem, TextView> getmTitleMap() {
+	public Map<DownloadItem, TextView> getTitleMap() {
 		return mTitleMap;
 	}
 
@@ -42,7 +45,7 @@ public class DownloadListAdapter extends BaseAdapter {
 	 * Get a map of download item related to the UI progress bar component.
 	 * @return
 	 */
-	public Map<DownloadItem, ProgressBar> getmBarMap() {
+	public Map<DownloadItem, ProgressBar> getBarMap() {
 		return mBarMap;
 	}
 
@@ -50,7 +53,7 @@ public class DownloadListAdapter extends BaseAdapter {
 	 * Get a map of download item related to the UI cancel button component.
 	 * @return
 	 */
-	public Map<DownloadItem, ImageButton> getmButtonMap() {
+	public Map<DownloadItem, ImageButton> getButtonMap() {
 		return mButtonMap;
 	}
 
@@ -71,8 +74,49 @@ public class DownloadListAdapter extends BaseAdapter {
 
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
-		// TODO Auto-generated method stub
-		return null;
+		if (convertView == null) {
+			LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			convertView = inflater.inflate(R.layout.download_row, null);
+		}
+		
+		final DownloadItem item = mDownloads.get(position);
+		
+		final ProgressBar progressBar = (ProgressBar) convertView.findViewById(R.id.DownloadRow_ProgressBar);
+		final TextView fileNameView = (TextView) convertView.findViewById(R.id.DownloadRow_FileName);
+		TextView urlView = (TextView) convertView.findViewById(R.id.DownloadRow_Url);
+		final ImageButton stopButton = (ImageButton) convertView.findViewById(R.id.DownloadRow_StopBtn);
+		
+		progressBar.setIndeterminate(false);
+		progressBar.setMax(100);
+		progressBar.setProgress(item.getProgress());
+		
+		if (item.isAborted()) {
+			fileNameView.setText(String.format(mContext.getResources().getString(R.string.DownloadListActivity_Aborted), item.getFileName()));
+			stopButton.setEnabled(false);
+		} else if (item.isFinished()) {
+			fileNameView.setText(String.format(mContext.getResources().getString(R.string.DownloadListActivity_Finished), item.getFileName()));
+			stopButton.setEnabled(false);
+		} else {
+			fileNameView.setText(item.getFileName());
+		}
+		urlView.setText(item.getUrl());
+		
+		stopButton.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				item.abortDownload();
+				stopButton.setEnabled(false);
+				fileNameView.setText(String.format(mContext.getResources().getString(R.string.DownloadListActivity_Aborted), item.getFileName()));
+				progressBar.setProgress(progressBar.getMax());
+			}
+		});
+		
+		mTitleMap.put(item, fileNameView);
+		mBarMap.put(item, progressBar);
+		mButtonMap.put(item, stopButton);
+		
+		return convertView;
 	}
 
 }

@@ -1,22 +1,159 @@
 package sf.browser.ui.activities;
 
+import java.io.File;
+
+import sf.browser.R;
+import sf.browser.controllers.Controller;
+import sf.browser.events.EventConstants;
+import sf.browser.events.EventController;
 import sf.browser.events.IDownloadEventsListener;
+import sf.browser.model.adapters.DownloadListAdapter;
+import sf.browser.model.items.DownloadItem;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ListActivity;
+import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.webkit.MimeTypeMap;
+import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 public class DownloadsListActivity extends ListActivity implements IDownloadEventsListener{
 	
 	private static final int MENU_CLEAR_DOWNLOADS = Menu.FIRST;
 	
+	private DownloadListAdapter mAdapter; 
 
-	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
+	    
+	    this.setContentView(R.layout.downloads_list_activity);
+	    
+	    this.setTitle(R.string.DownloadListActivity_Title);
+	    
+	    EventController.getInstance().addDownloadListener(this);
+	    
+	    fillData();
+	}
 	
-	    // TODO Auto-generated method stub
+	@Override
+	protected void onDestroy() {
+		EventController.getInstance().removeDownloadListener(this);
+		super.onDestroy();
 	}
 
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		
+		MenuItem item = menu.add(0, MENU_CLEAR_DOWNLOADS, 0, R.string.DownloadListActivity_RemoveCompletedDownloads);
+		item.setIcon(R.drawable.ic_menu_delete);
+		
+		return true;
+	}
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		switch(item.getItemId()) {
+		case MENU_CLEAR_DOWNLOADS:
+			Controller.getInstance().clearCompletedDownloads();
+			fillData();
+			return true;
+		default:
+			return super.onMenuItemSelected(featureId, item);
+		}
+	}
+
+	@Override
+	protected void onListItemClick(ListView l, View v, int position, long id) {
+		super.onListItemClick(l, v, position, id);
+
+		DownloadItem item = (DownloadItem) mAdapter.getItem(position);
+		if (item != null) {
+			if (item.isFinished() && !item.isAborted() && item.getErrorMessage()==null) {
+				 File file = new File(item.getFilePath());
+				 if (file.exists()) {
+					 MimeTypeMap mime = MimeTypeMap.getSingleton();
+					 String ext = file.getName().substring(file.getName().lastIndexOf(".")+1).toLowerCase();
+					 String type = mime.getMimeTypeFromExtension(ext);
+
+					 Intent i = new Intent(Intent.ACTION_VIEW);
+					 i.setDataAndType(Uri.fromFile(file), type);
+					 
+					 try {
+						 startActivity(i);
+					 } catch (ActivityNotFoundException e) {
+						 new AlertDialog.Builder(this)
+						 	.setTitle(R.string.Main_VndErrorTitle)
+						 	.setMessage(String.format(getString(R.string.Main_VndErrorMessage), item.getFilePath()))
+						 	.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
+
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {}
+						 	})
+						 	.setCancelable(true)
+						 	.create()
+						 	.show();
+					 }
+				 }
+			}
+		}
+	}
+
+	/**
+	 * Fill the download list.
+	 */
+	private void fillData() {
+		mAdapter = new DownloadListAdapter(this, Controller.getInstance().getDownloadList());
+		setListAdapter(mAdapter);
+	}
+
+	@Override
+	public void onDownloadEvent(String event, Object data) {
+		if (event.equals(EventConstants.EVT_DOWNLOAD_ON_START)) {
+			fillData();
+		} else if (event.equals(EventConstants.EVT_DOWNLOAD_ON_PROGRESS)) {
+			if (data != null) {
+				DownloadItem item = (DownloadItem) data;
+				ProgressBar bar = mAdapter.getBarMap().get(item);
+				if (bar != null) {
+					bar.setMax(100);
+					bar.setProgress(item.getProgress());
+				}
+			}
+		} else if (event.equals(EventConstants.EVT_DOWNLOAD_ON_FINISHED)) {
+			if (data != null) {
+				DownloadItem item = (DownloadItem) data;
+				
+				TextView title = mAdapter.getTitleMap().get(item);
+				if (title != null) {
+					if (item.isAborted()) {
+						title.setText(String.format(getResources().getString(R.string.DownloadListActivity_Aborted), item.getFileName()));
+					} else {
+						title.setText(String.format(getResources().getString(R.string.DownloadListActivity_Finished), item.getFileName()));
+					}
+				}
+				
+				ProgressBar bar = mAdapter.getBarMap().get(item);
+				if (bar != null) {
+					bar.setProgress(bar.getMax());
+				}
+				
+				ImageButton button = mAdapter.getButtonMap().get(item);
+				if (button != null) {
+					button.setEnabled(false);
+				}
+			}
+		}
+	}
 }

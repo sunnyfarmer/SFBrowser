@@ -6,6 +6,7 @@ import java.util.Random;
 import sf.browser.R;
 import sf.browser.events.EventConstants;
 import sf.browser.events.EventController;
+import sf.browser.ui.activities.DownloadsListActivity;
 import sf.browser.ui.runnables.DownloadRunnable;
 import sf.browser.utils.IOUtils;
 import android.app.Notification;
@@ -176,7 +177,7 @@ public class DownloadItem {
 	private void createNotification() {
 		mNotification = new Notification(R.drawable.download_anim, mContext.getString(R.string.DownloadNotification_DownloadStart), System.currentTimeMillis());
 
-		Intent notificationIntent = new Intent(this.mContext.getApplicationContext(), DownloadListActivity.class);
+		Intent notificationIntent = new Intent(this.mContext.getApplicationContext(), DownloadsListActivity.class);
 		PendingIntent contentIntent = PendingIntent.getActivity(mContext.getApplicationContext(), 0, notificationIntent, 0);
 
 		mNotification.setLatestEventInfo(mContext.getApplicationContext(), mContext.getString(R.string.DownloadNotification_DownloadInProgress), mFileName, contentIntent);
