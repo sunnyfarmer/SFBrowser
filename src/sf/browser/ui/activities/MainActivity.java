@@ -14,31 +14,42 @@ import sf.browser.events.EventController;
 import sf.browser.events.IDownloadEventsListener;
 import sf.browser.model.adapters.UrlSuggestionCursorAdapter;
 import sf.browser.providers.BookmarksProviderWrapper;
+import sf.browser.providers.BookmarksProviderWrapper.BookmarksSource;
 import sf.browser.ui.components.CustomWebView;
+import sf.browser.ui.components.CustomWebViewClient;
+import sf.browser.ui.runnables.FaviconUpdaterRunnable;
 import sf.browser.ui.runnables.HideToolbarsRunnable;
 import sf.browser.utils.ApplicationUtils;
 import sf.browser.utils.Constants;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.ContextMenu;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
 import android.view.View.OnKeyListener;
@@ -46,9 +57,13 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.View.OnTouchListener;
+import android.webkit.DownloadListener;
+import android.webkit.JsResult;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebChromeClient.CustomViewCallback;
+import android.webkit.WebView;
+import android.webkit.WebView.HitTestResult;
 import android.webkit.WebIconDatabase;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
@@ -108,7 +123,7 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 	private ImageView mPreviousTabView;
 	private ImageView mNextTabView;
 
-	private ImageButton mTooldButton;
+	private ImageButton mToolsButton;
 	private AutoCompleteTextView mUrlEditText;
 	private ImageButton mGoButton;
 	private ProgressBar mProgressBar;
@@ -477,13 +492,383 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 		mGoButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				// TODO Auto-generated method stub
-				
+				if (mCurrentWebView.isLoading()) {
+					mCurrentWebView.stopLoading();
+				} else if (!mCurrentWebView.isSameUrl(mUrlEditText.getText().toString())) {
+					navigateToUrl();
+				} else {
+					mCurrentWebView.reload();
+				}
 			}
 		});
 
-	
+		mToolsButton = (ImageButton) findViewById(R.id.ToolsBtn);
+		mToolsButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				mToolsActionGridVisible = true;
+				mToolsActionGrid.show(v);
+			}
+		});
+
+		mProgressBar = (ProgressBar) findViewById(R.id.WebViewProgress);
+		mProgressBar.setMax(100);
+		
+		mPreviousButton = (ImageButton) findViewById(R.id.PreviousBtn);
+		mNextButton = (ImageButton) findViewById(R.id.NextBtn);
+		
+		mPreviousButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				navigatePrevious();
+			}
+		});
+		
+		mNextButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				navigateNext();
+			}
+		});
+		
+		mNewTabButton = (ImageButton) findViewById(R.id.NewTabBtn);
+		mNewTabButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				addTab(true);
+			}
+		});
+		
+		mRemoveTabButton = (ImageButton) findViewById(R.id.RemoveTabBtn);
+		mRemoveTabButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (mViewFlipper.getChildCount() == 1 && !mCurrentWebView.getUrl().equals(Constants.URL_ABOUT_START)) {
+					navigateToHome();
+					updateUI();
+					updatePreviousNextTabViewsVisibility();
+				} else {
+					removeCurrentTab();
+				}
+			}
+		});
+		
+		mQuickButton = (ImageButton) findViewById(R.id.QuickBtn);
+		mQuickButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				onQuickButton();
+			}
+		});
+		
+		mFindPreviousButton = (ImageButton) findViewById(R.id.find_previous);
+		mFindPreviousButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				mCurrentWebView.findNext(false);
+				hideKeyboardFromFindDialog();
+			}
+		});
+		
+		mFindNextButton = (ImageButton) findViewById(R.id.find_next);
+		mFindNextButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				mCurrentWebView.findNext(true);
+				hideKeyboardFromFindDialog();
+			}
+		});
+		
+		mFindCloseButton = (ImageButton) findViewById(R.id.find_close);
+		mFindCloseButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				closeFindDialog();
+			}
+		});
+		
+		mFindText = (EditText) findViewById(R.id.find_value);
+		mFindText.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
+				doFind();
+			}
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before,
+					int count) {
+			}
+			@Override
+			public void afterTextChanged(Editable s) {
+			}
+		});
 	}
+
+	private void registerPreferenceChangeListener() {
+		mPreferenceChangeListener = new OnSharedPreferenceChangeListener() {
+			@Override
+			public void onSharedPreferenceChanged(
+					SharedPreferences sharedPreferences, String key) {
+				if (key.equals(Constants.PREFERENCES_BOOKMARKS_DATABASE)) {
+					updateBookmarksDatabaseSource();
+				}
+			}
+		};
+		PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(mPreferenceChangeListener);
+	}
+	
+	/**
+	 * Apply preferences to the current UI objects.
+	 */
+	public void applyPreferences() {
+		//To update to Bubble positon.
+		setToolbarsVisibility(false);
+		
+		updateSwitchTabsMethod();
+		
+		for (CustomWebView view : mWebViews) {
+			view.initializeOptions();
+		}
+	}
+
+	private void updateSwitchTabsMethod() {
+		String method = PreferenceManager.getDefaultSharedPreferences(this).getString(Constants.PREFERENCES_GENERAL_SWITCH_TABS_METHOD, "buttons");
+		
+		if (method.equals("buttons")) {
+			mSwitchTabsMethod = SwitchTabsMethod.BUTTONS;
+		} else if (method.equals("fling")) {
+			mSwitchTabsMethod = SwitchTabsMethod.FLING;
+		} else if (method.equals("both")) {
+			mSwitchTabsMethod = SwitchTabsMethod.BOTH;
+		} else {
+			mSwitchTabsMethod = SwitchTabsMethod.BUTTONS;
+		}
+	}
+
+	private void updateBookmarksDatabaseSource() {
+		String source = PreferenceManager.getDefaultSharedPreferences(this).getString(Constants.PREFERENCES_BOOKMARKS_DATABASE, "STOCK");
+		
+		if (source.equals("STOCK")) {
+			BookmarksProviderWrapper.setBookmarksSource(BookmarksSource.STOCK);
+		} else if (source.equals("INTERNAL")) {
+			BookmarksProviderWrapper.setBookmarksSource(BookmarksSource.INTERNAL);
+		}
+	}
+
+	private void setStatusBarVisibility(boolean visible) {
+		int flag = visible ? 0 : WindowManager.LayoutParams.FLAG_FULLSCREEN;
+		getWindow().setFlags(flag, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+	}
+
+	/**
+	 * Initialize a newly created WebView.
+	 */
+	private void initializeCurrentWebView() {
+		mCurrentWebView.setWebViewClient(new CustomWebViewClient(this));
+		mCurrentWebView.setOnTouchListener(this);
+		
+		mCurrentWebView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+			@Override
+			public void onCreateContextMenu(ContextMenu menu, View v,
+					ContextMenuInfo menuInfo) {
+				HitTestResult result = ((WebView) v).getHitTestResult();
+				
+				int resultType = result.getType();
+				if ((resultType == HitTestResult.ANCHOR_TYPE) ||
+						(resultType == HitTestResult.IMAGE_ANCHOR_TYPE) ||
+						(resultType == HitTestResult.SRC_ANCHOR_TYPE) ||
+						(resultType == HitTestResult.SRC_IMAGE_ANCHOR_TYPE)) {
+					Intent i = new Intent();
+					i.putExtra(Constants.EXTRA_ID_URL, result.getExtra());
+					
+					MenuItem item = menu.add(0, CONTEXT_MENU_OPEN, 0, R.string.Main_MenuOpen);
+					item.setIntent(i);
+					
+					item = menu.add(0, CONTEXT_MENU_OPEN_IN_NEW_TAB, 0, R.string.Main_MenuOpenNewTab);
+					item.setIntent(i);
+					
+					item = menu.add(0, CONTEXT_MENU_COPY, 0, R.string.Main_MenuCopyLinkUrl);
+					item.setIntent(i);
+					
+					item = menu.add(0, CONTEXT_MENU_DOWNLOAD, 0, R.string.Main_MenuDownload);
+					item.setIntent(i);
+					
+					item = menu.add(0, CONTEXT_MENU_SHARE, 0, R.string.Main_MenuShareLinkUrl);
+					item.setIntent(i);
+					
+					menu.setHeaderTitle(result.getExtra());
+				} else if (resultType == HitTestResult.IMAGE_TYPE) {
+					Intent i = new Intent();
+					i.putExtra(Constants.EXTRA_ID_URL, result.getExtra());
+					
+					MenuItem item = menu.add(0, CONTEXT_MENU_OPEN, 0, R.string.Main_MenuViewImage);
+					item.setIntent(i);
+					
+					item = menu.add(0, CONTEXT_MENU_COPY, 0, R.string.Main_MenuCopyImageUrl);
+					item.setIntent(i);
+					
+					item = menu.add(0, CONTEXT_MENU_DOWNLOAD, 0, R.string.Main_MenuDownloadImage);
+					item.setIntent(i);
+					
+					item = menu.add(0, CONTEXT_MENU_SHARE, 0, R.string.Main_MenuShareImageUrl);
+					item.setIntent(i);
+					
+					menu.setHeaderTitle(result.getExtra());
+				} else if (resultType == HitTestResult.EMAIL_TYPE) {
+					Intent sendMail = new Intent(Intent.ACTION_VIEW, Uri.parse(WebView.SCHEME_MAILTO + result.getExtra()));
+					
+					MenuItem item = menu.add(0, CONTEXT_MENU_SEND_MAIL, 0, R.string.Main_MenuSendEmail);
+					item.setIntent(sendMail);
+					
+					Intent i = new Intent();
+					i.putExtra(Constants.EXTRA_ID_URL, result.getExtra());
+					
+					item = menu.add(0, CONTEXT_MENU_COPY, 0, R.string.Main_MenuCopyEmailUrl);
+					item.setIntent(i);
+					
+					item = menu.add(0, CONTEXT_MENU_SHARE, 0, R.string.Main_MenuShareEmailUrl);
+					item.setIntent(i);
+					
+					menu.setHeaderTitle(result.getExtra());
+				}
+			}
+		});
+		
+		mCurrentWebView.setDownloadListener(new DownloadListener() {
+			@Override
+			public void onDownloadStart(String url, String userAgent,
+					String contentDisposition, String mimetype, long contentLength) {
+				doDownloadStart(url, userAgent, contentDisposition, mimetype, contentLength);
+			}
+		});
+		
+		final Activity activity = this;
+		mCurrentWebView.setWebChromeClient(new WebChromeClient() {
+			
+			// This is an undocumented method, it _is_ used, whatever Eclipse may think
+			// Used to show a file chooser dialog.
+			public void openFileChooser(ValueCallback<Uri> uploadMsg) {
+				mUploadMessage = uploadMsg;
+				Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+				i.addCategory(Intent.CATEGORY_OPENABLE);
+				i.setType("*/*");
+				MainActivity.this.startActivityForResult(Intent.createChooser(i, MainActivity.this.getString(R.string.Main_FileChooserPrompt)), OPEN_FILE_CHOOSER_ACTIVITY);
+			}
+			public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType) {
+				mUploadMessage = uploadMsg;
+				Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+				i.addCategory(Intent.CATEGORY_OPENABLE);
+				i.setType("*/*");
+				MainActivity.this.startActivityForResult(Intent.createChooser(i, MainActivity.this.getString(R.string.Main_FileChooserPrompt)), OPEN_FILE_CHOOSER_ACTIVITY);
+			}
+			
+			@Override
+			public Bitmap getDefaultVideoPoster() {
+				if (mDefaultVideoPoster == null) {
+					mDefaultVideoPoster = BitmapFactory.decodeResource(MainActivity.this.getResources(), R.drawable.default_video_poster);
+				}
+				
+				return mDefaultVideoPoster;
+			}
+			@Override
+			public View getVideoLoadingProgressView() {
+				if (mVideoProgressView == null) {
+					LayoutInflater inflater = LayoutInflater.from(MainActivity.this);
+					mVideoProgressView = inflater.inflate(R.layout.video_loading_progress, null);
+				}
+				
+				return mVideoProgressView;
+			}
+			
+			@Override
+			public void onShowCustomView(View view, WebChromeClient.CustomViewCallback callback) {
+				showCustomView(view, callback);
+			}
+			
+			@Override
+			public void onHideCustomView() {
+				hideCustomView();
+			}
+			
+			@Override
+			public void onProgressChanged(WebView view, int newProgress) {
+				((CustomWebView) view).setProgress(newProgress);
+				mProgressBar.setProgress(mCurrentWebView.getProgress());
+			}
+			
+			@Override
+			public void onReceivedIcon(WebView view, Bitmap icon) {
+				new Thread(new FaviconUpdaterRunnable(MainActivity.this, view.getUrl(), view.getOriginalUrl(), icon)).start();
+				updateFavIcon();
+				
+				super.onReceivedIcon(view, icon);
+			}
+			
+			@Override
+			public boolean onCreateWindow(WebView view, final boolean dialog, final boolean userGesture, final Message resultMsg) {
+				WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+				
+				addTab(false, mViewFlipper.getDisplayedChild());
+				
+				transport.setWebView(mCurrentWebView);
+				resultMsg.sendToTarget();
+				
+				return true;
+			}
+			
+			@Override
+			public void onReceivedTitle(WebView view, String title) {
+				setTitle(String.format(getResources().getString(R.string.ApplicationNameUrl), title));
+				
+				startHistoryUpdaterRunnable(title, mCurrentWebView.getUrl(), mCurrentWebView.getOriginalUrl());
+				
+				super.onReceivedTitle(view, title);
+			}
+			
+			@Override
+			public boolean onJsAlert(WebView view, String url, String message, final JsResult result) {
+				new AlertDialog.Builder(activity)
+					.setTitle(R.string.Commons_JavaScriptDialog)
+					.setMessage(message)
+					.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
+
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							result.confirm();
+						}
+					})
+					.setCancelable(false)
+					.create()
+					.show();
+				return true;
+			}
+			
+			@Override
+			public boolean onJsConfirm(WebView view, String url, String message, final JsResult result) {
+				new AlertDialog.Builder(MainActivity.this)
+					.setTitle(R.string.Commons_JavaScriptDialog)
+					.setMessage(message)
+					.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							result.confirm();
+						}
+					})
+					.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							result.cancel();
+						}
+					})
+					.create()
+					.show();
+				
+				return true;
+			}
+		});
+	}
+	
+	
 	
 	
 	
