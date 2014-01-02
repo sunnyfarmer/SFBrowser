@@ -1,6 +1,7 @@
 package sf.browser.ui.activities;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.greendroid.QuickAction;
@@ -10,6 +11,7 @@ import org.greendroid.QuickActionWidget.OnQuickActionClickListener;
 
 import sf.browser.R;
 import sf.browser.controllers.Controller;
+import sf.browser.events.EventConstants;
 import sf.browser.events.EventController;
 import sf.browser.events.IDownloadEventsListener;
 import sf.browser.model.adapters.UrlSuggestionCursorAdapter;
@@ -40,6 +42,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -465,7 +468,7 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 			public Cursor runQuery(CharSequence constraint) {
 				if (constraint!=null && constraint.length()>0) {
 					return BookmarksProviderWrapper.getUrlSuggestions(getContentResolver(), constraint.toString(),
-							PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getBoolean(Constants.PREFERENCES_USE_WEAVE, false));.
+							PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getBoolean(Constants.PREFERENCES_USE_WEAVE, false));
 				} else {
 					return BookmarksProviderWrapper.getUrlSuggestions(getContentResolver(), null,
 							PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getBoolean(Constants.PREFERENCES_USE_WEAVE, false));
@@ -488,7 +491,7 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 			}
 		});
 		
-		mUrlTextWatch = new TextWatcher() {
+		mUrlTextWatcher = new TextWatcher() {
 			@Override
 			public void onTextChanged(CharSequence s, int start, int before, int count) {
 			}
@@ -504,7 +507,7 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 			}
 		};
 		
-		mUrlEditText.addTextChangedListener(mUrlTextWatch);
+		mUrlEditText.addTextChangedListener(mUrlTextWatcher);
 		
 		mUrlEditText.setOnFocusChangeListener(new OnFocusChangeListener() {
 			@Override
@@ -1276,7 +1279,7 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 	}
 
 	private void hideKeyboardFromFindDialog() {
-		InputMethodManager imm = (ImputMethodManager) this
+		InputMethodManager imm = (InputMethodManager) this
 				.getSystemService(Context.INPUT_METHOD_SERVICE);
 		imm.hideSoftInputFromWindow(mFindText.getWindowToken(), 0);
 	}
@@ -1372,7 +1375,7 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 	 * @param url
 	 * @param originalUrl
 	 */
-	private void startHistoryupdaterRunnable(String title, String url,
+	private void startHistoryUpdaterRunnable(String title, String url,
 			String originalUrl) {
 		if (url != null && url.length() > 0) {
 			new Thread(new HistoryUpdater(this, title, url, originalUrl))
@@ -1639,7 +1642,7 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 		updateFavIcon();
 	}
 	
-	private boolean isSwitchTabsByFliingEnabled() {
+	private boolean isSwitchTabsByFlingEnabled() {
 		return (mSwitchTabsMethod == SwitchTabsMethod.FLING) || (mSwitchTabsMethod == SwitchTabsMethod.BOTH);
 	}
 	
@@ -1715,21 +1718,385 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 		return true;
 	}
 
-	
-	
-	
-	
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		switch(item.getItemId()) {
+		case MENU_ADD_BOOKMARK:
+			openAddBookmarkDialog();
+			return true;
+		case MENU_SHOW_BOOKMARKS:
+			openBookmarksHistoryActivity();
+			return true;
+		case MENU_SHOW_DOWNLOADS:
+			openDownloadsList();
+			return true;
+		case MENU_PREFERENCES:
+			openPreferences();
+			return true;
+		case MENU_EXIT:
+			this.finish();
+			return true;
+		default:
+			return super.onMenuItemSelected(featureId, item);
+		}
+	}
 	
 	@Override
-	public void onDownloadEvent(String event, Object data) {
-		// TODO Auto-generated method stub
-
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
 	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+		super.onActivityResult(requestCode, resultCode, intent);
+		
+		if (requestCode == OPEN_BOOKMARKS_HISTORY_ACTIVITY) {
+			if (intent != null) {
+				Bundle b = intent.getExtras();
+				if (b != null) {
+					if (b.getBoolean(Constants.EXTRA_ID_NEW_TAB)) {
+						addTab(false);
+					}
+					navigateToUrl(b.getString(Constants.EXTRA_ID_URL));
+				}
+			}
+		} else if (requestCode == OPEN_FILE_CHOOSER_ACTIVITY) {
+			if (mUploadMessage == null) {
+				return;
+			}
+			
+			Uri result = intent == null || resultCode != RESULT_OK ? null : intent.getData();
+			mUploadMessage.onReceiveValue(result);
+			mUploadMessage = null;
+		}
+	}
+	
+	@Override
+	protected void onPause() {
+		mCurrentWebView.doOnPause();
+		super.onPause();
+	}
+	
+	@Override
+	protected void onResume() {
+		mCurrentWebView.doOnResume();
+		super.onResume();
+	}
+	
+	/**
+	 * Show a toast alert on tab switch.
+	 */
+	private void showToastOnTabSwitch() {
+		if (Controller.getInstance().getPreferences().getBoolean(Constants.PREFERENCES_SHOW_TOAST_ON_TAB_SWITCH, true)) {
+			String text;
+			if (mCurrentWebView.getTitle() != null) {
+				text = String.format(getString(R.string.Main_ToastTabSwitchFullMessage), mViewFlipper.getDisplayedChild()+1, mCurrentWebView.getTitle());
+			} else {
+				text = String.format(getString(R.string.Main_ToastTabSwitchMessage), mViewFlipper.getDisplayedChild()+1);
+			}
+			Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+	private void updatePreviousNextTabViewsVisibility() {
+		if (mUrlBarVisible && isSwitchTabsByButtonsEnabled()) {
+			if (mViewFlipper.getDisplayedChild() > 0) {
+				mPreviousTabView.setVisibility(View.VISIBLE);
+			} else {
+				mPreviousTabView.setVisibility(View.GONE);
+			}
+			
+			if (mViewFlipper.getDisplayedChild() < mViewFlipper.getChildCount()-1) {
+				mNextTabView.setVisibility(View.VISIBLE);
+			} else {
+				mNextTabView.setVisibility(View.GONE);
+			}
+		} else {
+			mPreviousTabView.setVisibility(View.GONE);
+			mNextTabView.setVisibility(View.GONE);
+		}
+	}
+	
+	/**
+	 * Show the previous tab, if any.
+	 * @param resetToolbarsRunnable
+	 */
+	private void showPreviousTab(boolean resetToolbarsRunnable) {
+		if (mViewFlipper.getChildCount() > 1) {
+			if (mFindDialogVisible) {
+				closeFindDialog();
+			}
+			
+			mCurrentWebView.doOnPause();
+			
+			mViewFlipper.setInAnimation(AnimationManager.getInstance().getInFromLeftAnimation());
+			mViewFlipper.setOutAnimation(AnimationManager.getInstance().getOutToRightAnimation());
+			
+			mViewFlipper.showPrevious();
+			
+			mCurrentWebView = mWebViews.get(mViewFlipper.getDisplayedChild());
+			
+			mCurrentWebView.doOnResume();
+			
+			if (resetToolbarsRunnable) {
+				startToolbarsHideRunnable();
+			}
+			
+			showToastOnTabSwitch();
+			
+			updatePreviousNextTabViewsVisibility();
+			
+			updateUI();
+		}
+	}
+	
+	private void showCustomView(View view, WebChromeClient.CustomViewCallback callback) {
+		// if a view already exists then immediately terminate the new one
+		if (mCustomView != null) {
+			callback.onCustomViewHidden();
+			return;
+		}
+		
+		MainActivity.this.getWindow().getDecorView();
+		
+		FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+		mFullscreenContainer = new FullscreenHolder(MainActivity.this);
+		mFullscreenContainer.addView(view, COVER_SCREEN_PARAMS);
+		decor.addView(mFullscreenContainer, COVER_SCREEN_PARAMS);
+		mCustomView = view;
+		setStatusBarVisibility(false);
+		mCustomViewCallback = callback;
+	}
+	
+	private void hideCustomView() {
+		if (mCustomView == null) {
+			return;
+		}
+		
+		setStatusBarVisibility(true);
+		FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+		decor.removeView(mFullscreenContainer);
+		mFullscreenContainer = null;
+		mCustomView = null;
+		mCustomViewCallback.onCustomViewHidden();
+	}
+	
+	/**
+	 * Show the next tab, if any.
+	 * @param resetToolbarsRunnable
+	 */
+	private void showNextTab(boolean resetToolbarsRunnable) {
+		if (mViewFlipper.getChildCount() > 1) {
+			if (mFindDialogVisible) {
+				closeFindDialog();
+			}
+			
+			mCurrentWebView.doOnPause();
+			
+			mViewFlipper.setInAnimation(AnimationManager.getInstance().getInFromRightAnimation());
+			mViewFlipper.setOutAnimation(AnimationManager.getInstance().getOutToLeftAnimation());
+			
+			mViewFlipper.showNext();
+			
+			mCurrentWebView = mWebViews.get(mViewFlipper.getDisplayedChild());
+			
+			mCurrentWebView.doOnResume();
+			
+			if (resetToolbarsRunnable) {
+				startToolbarsHideRunnable();
+			}
+			
+			showToastOnTabSwitch();
+			
+			updatePreviousNextTabViewsVisibility();
+			
+			updateUI();
+		}
+	}
+	
 
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
-		// TODO Auto-generated method stub
-		return false;
+		hideKeyboard(false);
+		
+		return mGestureDetector.onTouchEvent(event);
+	}
+	
+	/**
+	 * Check if the url is in the AdBlock white list.
+	 * @param url The url to check
+	 * @return true if the url is in the white list
+	 */
+	private boolean checkInAdBlockWhiteList(String url) {
+		if (url != null) {
+			boolean inList = false;
+			Iterator<String> iter = Controller.getInstance().getAdBlockWhiteList(this).iterator();
+			while((iter.hasNext()) && (!inList)) {
+				if (url.contains(iter.next())) {
+					inList = true;
+				}
+			}
+			return inList;
+		} else {
+			return false;
+		}
+	}
+	
+	public void onPageFinished(String url) {
+		updateUI();
+		
+		if ((Controller.getInstance().getPreferences().getBoolean(Constants.PREFERENCES_ADBLOCKER_ENABLE, true)) &&
+				(!checkInAdBlockWhiteList(mCurrentWebView.getUrl()))) {
+			mCurrentWebView.loadAdSweep();
+		}
+		
+		WebIconDatabase.getInstance().retainIconForPageUrl(mCurrentWebView.getUrl());
+		
+		if (mUrlBarVisible) {
+			startToolbarsHideRunnable();
+		}
+	}
+	
+	public void onPageStarted(String url) {
+		if (mFindDialogVisible) {
+			closeFindDialog();
+		}
+		
+		mUrlEditText.removeTextChangedListener(mUrlTextWatcher);
+		mUrlEditText.setText(url);
+		mUrlEditText.addTextChangedListener(mUrlTextWatcher);
+		
+		mPreviousButton.setEnabled(false);
+		mNextButton.setEnabled(false);
+		
+		updateGoButton();
+		
+		setToolbarsVisibility(true);
+	}
+	
+	public void onUrlLoading(String url) {
+		setToolbarsVisibility(true);
+	}
+	
+	public void onMailTo(String url) {
+		Intent sendMail = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+		startActivity(sendMail);
+	}
+	
+	public void onExternalApplicationUrl(String url) {
+		try {
+			Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+			startActivity(i);
+		} catch (Exception e) {
+			//Notify user that the vnd url cannot be viewed.
+			new AlertDialog.Builder(this)
+			.setTitle(R.string.Main_VndErrorTitle)
+			.setMessage(String.format(getString(R.string.Main_VndErrorMessage), url))
+			.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {}
+			})
+			.setCancelable(true)
+			.create()
+			.show();
+		}
+	}
+	
+	public void setHttpAuthUsernamePassword(String host, String realm, String username, String password) {
+		mCurrentWebView.setHttpAuthUsernamePassword(host, realm, username, password);
+	}
+	
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		if ((item != null) && (item.getIntent()!=null)) {
+			Bundle b = item.getIntent().getExtras();
+			
+			switch(item.getItemId()) {
+			case CONTEXT_MENU_OPEN:
+				if (b != null) {
+					navigateToUrl(b.getString(Constants.EXTRA_ID_URL));
+				}
+				return true;
+			case CONTEXT_MENU_OPEN_IN_NEW_TAB:
+				if (b != null) {
+					addTab(false, mViewFlipper.getDisplayedChild());
+					navigateToUrl(b.getString(Constants.EXTRA_ID_URL));
+				}
+				return true;
+			case CONTEXT_MENU_DOWNLOAD:
+				if (b != null) {
+					doDownloadStart(b.getString(Constants.EXTRA_ID_URL), null, null, null, 0);
+				}
+				return true;
+			case CONTEXT_MENU_COPY:
+				if (b != null) {
+					ApplicationUtils.copyTextToClipboard(this, b.getString(Constants.EXTRA_ID_URL), getString(R.string.Commons_UrlCopyToastMessage));
+				}
+				return true;
+			case CONTEXT_MENU_SHARE:
+				if (b != null) {
+					ApplicationUtils.sharePage(this, "", b.getString(Constants.EXTRA_ID_URL));
+				}
+				return true;
+			default:
+				return super.onContextItemSelected(item);
+			}
+		}
+		
+		return super.onContextItemSelected(item);
+	}
+	
+	@Override
+	public void onDownloadEvent(String event, Object data) {
+		if (event.equals(EventConstants.EVT_DOWNLOAD_ON_FINISHED)) {
+			DownloadItem item = (DownloadItem) data;
+			
+			if (item.getErrorMessage() == null) {
+				Toast.makeText(this, getString(R.string.Main_DownloadFinishedMsg), Toast.LENGTH_SHORT).show();
+			} else {
+				Toast.makeText(this, getString(R.string.Main_DownloadErrorMsg, item.getErrorMessage()),  Toast.LENGTH_SHORT).show();
+			}
+		}
 	}
 
+	private class GestureListener extends GestureDetector.SimpleOnGestureListener {
+		
+		@Override
+		public boolean onDoubleTap(MotionEvent e) {
+			mCurrentWebView.zoomIn();
+			return super.onDoubleTap(e);
+		}
+		
+		@Override
+		public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+			if (isSwitchTabsByFlingEnabled()) {
+				if (e2.getEventTime() - e1.getEventTime() <= FLIP_TIME_THRESHOLD) {
+					if (e2.getX() > (e1.getX() + FLIP_PIXEL_THRESHOLD)) {
+						showPreviousTab(false);
+						return false;
+					}
+
+					//going forwards: pushing stuff to the left
+					if (e2.getX() < (e1.getX()-FLIP_PIXEL_THRESHOLD)) {
+						showNextTab(false);
+						return false;
+					}
+				}
+			}
+			return super.onFling(e1, e2, velocityX, velocityY);
+		}		
+	}
+
+	static class FullscreenHolder extends FrameLayout {
+		public FullscreenHolder (Context ctx) {
+			super(ctx);
+			setBackgroundColor(ctx.getResources().getColor(android.R.color.black));
+		}
+		
+		@Override
+		public boolean onTouchEvent(MotionEvent event) {
+			return true;
+		}
+	}
+	
 }

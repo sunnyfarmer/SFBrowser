@@ -139,7 +139,7 @@ public class CustomWebViewClient extends WebViewClient {
 
 	@Override
 	public void onReceivedHttpAuthRequest(WebView view,
-			final HttpAuthHandler handler, String host, String realm) {
+			final HttpAuthHandler handler, final String host, final String realm) {
 		String username = null;
 		String password = null;
 
