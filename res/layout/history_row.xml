@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:descendantFocusability="blocksDescendants"
+    android:paddingBottom="5dp"
+    android:paddingLeft="25dp"
+    android:paddingTop="5dp" >
+
+    <ImageView
+        android:id="@+id/HistoryRow.Thumbnail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center"
+        android:layout_marginRight="10dp"
+        android:background="@drawable/fav_icn_background"
+        android:contentDescription="@string/default_content_description"
+        android:padding="2dp" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_toLeftOf="@+id/HistoryRow.BookmarkStar"
+        android:layout_toRightOf="@+id/HistoryRow.Thumbnail"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/HistoryRow.Title"
+            style="@style/History.Title"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="@+id/HistoryRow.Title" />
+
+        <TextView
+            android:id="@+id/HistoryRow.Url"
+            style="@style/History.Url"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="@+id/HistoryRow.Url" />
+    </LinearLayout>
+
+    <CheckBox
+        android:id="@+id/HistoryRow.BookmarkStar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_gravity="center_vertical"
+        android:button="@android:drawable/btn_star" />
+
+</RelativeLayout>

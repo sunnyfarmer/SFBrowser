@@ -23,7 +23,7 @@ public class HistoryItem {
 		}
 	}
 
-	public long getmId() {
+	public long getId() {
 		return mId;
 	}
 
