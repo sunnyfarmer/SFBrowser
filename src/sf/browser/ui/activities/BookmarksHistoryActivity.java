@@ -1,9 +1,10 @@
-package sf.browser;
+package sf.browser.ui.activities;
 
+import sf.browser.R;
+import sf.browser.R.drawable;
+import sf.browser.R.layout;
+import sf.browser.R.string;
 import sf.browser.controllers.Controller;
-import sf.browser.ui.activities.BookmarksListActivity;
-import sf.browser.ui.activities.HistoryListActivity;
-import sf.browser.ui.activities.WeaveBookmarksListActivity;
 import sf.browser.utils.Constants;
 import android.app.Activity;
 import android.app.TabActivity;
