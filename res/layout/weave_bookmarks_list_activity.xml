@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+    
+    <LinearLayout android:id="@+id/WeaveBookmarksNavigationView"
+        android:orientation="horizontal" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:paddingTop="1dp"
+        android:paddingBottom="0dp">
+        <ImageButton android:id="@+id/WeaveBookmarksNavigationBack"
+            android:layout_width="wrap_content" android:src="@drawable/ic_btn_back"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/default_content_description" />
+        <TextView android:id="@+id/WeaveBookmarksNavigationText"
+            android:text="@+id/WeaveBookmarksNavigationText"
+            android:layout_gravity="center_vertical" android:singleLine="true"
+            android:ellipsize="start" android:paddingLeft="5dp"
+            android:layout_width="fill_parent" android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <ListView
+        android:id="@+id/WeaveBookmarksList"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent" />
+    
+    <LinearLayout android:id="@+id/WeaveBookmarksEmptyView"
+        android:orientation="vertical" android:layout_marginTop="10dp"
+        android:layout_width="match_parent" android:layout_height="match_parent">
+        <TextView android:text="@string/WeaveBookmarksListActivity.EmptyText"
+            android:gravity="center_horizontal" android:layout_gravity="center_vertical"
+            android:layout_width="fill_parent" android:layout_height="wrap_content" />
+        <LinearLayout android:orientation="horizontal"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center" android:layout_marginTop="10dp">
+            <Button android:id="@+id/WeaveBookmarksEmptyViewSetupButton"
+                android:text="@string/WeaveBookmarksListActivity.SetupButton" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_weight="1" />
+            <Button android:id="@+id/WeaveBookmarksEmptyViewSyncButton"
+                android:text="@string/WeaveBookmarksListActivity.SyncButton" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_weight="1" />
+        </LinearLayout>
+    </LinearLayout>
+    
+    <TextView android:id="@+id/WeaveBookmarksEmptyFolderView"
+        android:text="@string/WeaveBookmarksListActivity.EmptyFolderText"
+        android:layout_gravity="center_vertical" android:gravity="center_horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</LinearLayout>
