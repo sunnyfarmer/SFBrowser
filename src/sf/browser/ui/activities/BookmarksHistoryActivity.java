@@ -62,7 +62,7 @@ public class BookmarksHistoryActivity extends TabActivity {
 	    		.setContent(intent);
 	    tabHost.addTab(spec);
 	    
-	    if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Constants.PREFERENCES_USE_WEAVE, false)) {
+	    if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Constants.PREFERENCE_USE_WEAVE, false)) {
 	    	//Weave bookmarks
 	    	intent = new Intent().setClass(this, WeaveBookmarksListActivity.class);
 	    	

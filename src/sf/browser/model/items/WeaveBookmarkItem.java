@@ -14,19 +14,19 @@ public class WeaveBookmarkItem {
 		this.mIsFolder = isFolder;
 	}
 
-	public String getmTitle() {
+	public String getTitle() {
 		return mTitle;
 	}
 
-	public String getmUrl() {
+	public String getUrl() {
 		return mUrl;
 	}
 
-	public boolean ismIsFolder() {
+	public boolean isFolder() {
 		return mIsFolder;
 	}
 
-	public String getmWeaveId() {
+	public String getWeaveId() {
 		return mWeaveId;
 	}
 }

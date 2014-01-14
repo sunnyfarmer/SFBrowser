@@ -61,10 +61,10 @@ public class ApplicationUtils {
 	}
 
 	public static String getWeaveAuthToken(Context context) {
-		String server = PreferenceManager.getDefaultSharedPreferences(context).getString(Constants.PREFERENCES_WEAVE_SERVER, Constants.WEAVE_DEFAULT_SERVER);
-		String userName = PreferenceManager.getDefaultSharedPreferences(context).getString(Constants.PREFERENCES_WEAVE_USERNAME, null);
-		String password = PreferenceManager.getDefaultSharedPreferences(context).getString(Constants.PREFERENCES_WEAVE_PASSWORD, null);
-		String key = PreferenceManager.getDefaultSharedPreferences(context).getString(Constants.PREFERENCES_WEAVE_KEY, null);
+		String server = PreferenceManager.getDefaultSharedPreferences(context).getString(Constants.PREFERENCE_WEAVE_SERVER, Constants.WEAVE_DEFAULT_SERVER);
+		String userName = PreferenceManager.getDefaultSharedPreferences(context).getString(Constants.PREFERENCE_WEAVE_USERNAME, null);
+		String password = PreferenceManager.getDefaultSharedPreferences(context).getString(Constants.PREFERENCE_WEAVE_PASSWORD, null);
+		String key = PreferenceManager.getDefaultSharedPreferences(context).getString(Constants.PREFERENCE_WEAVE_KEY, null);
 
 		boolean ok = (server != null) && (server.length() > 0) && (UrlUtils.isUrl(server)) &&
 				(userName != null) && (userName.length() > 0) &&
