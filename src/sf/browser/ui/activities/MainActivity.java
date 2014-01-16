@@ -468,10 +468,10 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 			public Cursor runQuery(CharSequence constraint) {
 				if (constraint!=null && constraint.length()>0) {
 					return BookmarksProviderWrapper.getUrlSuggestions(getContentResolver(), constraint.toString(),
-							PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getBoolean(Constants.PREFERENCES_USE_WEAVE, false));
+							PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getBoolean(Constants.PREFERENCE_USE_WEAVE, false));
 				} else {
 					return BookmarksProviderWrapper.getUrlSuggestions(getContentResolver(), null,
-							PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getBoolean(Constants.PREFERENCES_USE_WEAVE, false));
+							PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getBoolean(Constants.PREFERENCE_USE_WEAVE, false));
 				}
 			}
 		});

@@ -56,6 +56,7 @@
         
         <provider android:name=".providers.ZircoBookmarksContentProvider" android:authorities="sf.browser.providers.zircobookmarkscontentprovider"></provider>
         <provider android:name=".providers.WeaveContentProvider" android:authorities="sf.browser.providers.weavecontentprovider"></provider>
+        <activity android:name=".ui.activities.preferences.PreferencesActivity"></activity>
 
     </application>
 </manifest>
