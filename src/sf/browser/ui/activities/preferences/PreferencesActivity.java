@@ -5,6 +5,7 @@ import java.util.List;
 import sf.browser.R;
 import sf.browser.controllers.Controller;
 import sf.browser.providers.BookmarksProviderWrapper;
+import sf.browser.ui.activities.AboutActivity;
 import sf.browser.ui.activities.ChangelogActivity;
 import sf.browser.ui.activities.MainActivity;
 import sf.browser.ui.components.CustomWebView;

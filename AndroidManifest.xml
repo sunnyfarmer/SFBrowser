@@ -53,10 +53,17 @@
         <activity android:name=".ui.activities.WeaveBookmarksListActivity"></activity>
         <activity android:name=".ui.activities.preferences.WeavePreferencesActivity"></activity>
         <activity android:name=".ui.activities.preferences.WeaveServerPreferenceActivity" android:theme="@android:style/Theme.Dialog" android:label="@string/WeaveServerPreferenceActivity.Title"></activity>
-        
+        <activity android:name=".ui.activities.preferences.PreferencesActivity"></activity>
+        <activity android:name=".ui.activities.preferences.HomepagePreferenceActivity" android:theme="@android:style/Theme.Dialog" android:label="@string/HomepagePreferenceActivity.Title"></activity>
+        <activity android:name=".ui.activities.preferences.UserAgentPreferenceActivity" android:theme="@android:style/Theme.Dialog" android:label="@string/UserAgentPreferenceActivity.Title"></activity>
+        <activity android:name=".ui.activities.AboutActivity" android:theme="@android:style/Theme.Dialog" android:label="@string/AboutActivity.Title"></activity>
+        <activity android:name=".ui.activities.preferences.SearchUrlPreferenceActivity" android:theme="@android:style/Theme.Dialog" android:label="@string/SearchUrlPreferenceActivity.Title"></activity>
+
         <provider android:name=".providers.ZircoBookmarksContentProvider" android:authorities="sf.browser.providers.zircobookmarkscontentprovider"></provider>
         <provider android:name=".providers.WeaveContentProvider" android:authorities="sf.browser.providers.weavecontentprovider"></provider>
-        <activity android:name=".ui.activities.preferences.PreferencesActivity"></activity>
+        <activity android:name=".ui.activities.MobileViewListActivity"></activity>
+
+
 
     </application>
 </manifest>

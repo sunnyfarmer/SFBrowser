@@ -120,7 +120,7 @@
     </PreferenceCategory>
 	<PreferenceCategory
 	    android:key="BrowserPreferenceCategory"
-	    android:title="@string/PreferencesActivity.BrowserSettingCategoryTitle">
+	    android:title="@string/PreferencesActivity.BrowserSettingsCategoryTitle">
 	    <ListPreference
 	        android:title="@string/PreferencesActivity.DefaultZoomPreferenceTitle"
 	        android:summary="@string/PreferencesActivity.DefaultZoomPreferenceSummary"
@@ -212,7 +212,7 @@
 	            android:key="PrivacyClearCookies" />
 	    </PreferenceScreen>
 	</PreferenceCategory>
-	<PreferenceCategory android:title="@string/PreferencesActivity.AdBlockerSettingCategoryTitle">
+	<PreferenceCategory android:title="@string/PreferencesActivity.AdBlockerSettingsCategoryTitle">
 	    <CheckBoxPreference
 	        android:title="@string/PreferencesActivity.EnableAdBlockerPreferenceTitle"
 	        android:defaultValue="true"
