@@ -27,7 +27,7 @@ public class ZircoBookmarksContentProvider extends ContentProvider {
 	public static final String BOOKMARKS_TABLE = "bookmarks";
 
 	private static final String BOOKMARKS_TABLE_CREATE = "CREATE TABLE " + BOOKMARKS_TABLE + " (" +
-			Browser.BookmarkColumns._ID + "INTEGER PRIMARY KEY AUTOINCREMENT, " + 
+			Browser.BookmarkColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + 
 			Browser.BookmarkColumns.TITLE + " TEXT, " + 
 			Browser.BookmarkColumns.URL + " TEXT, " + 
 			Browser.BookmarkColumns.VISITS + " INTEGER, " +

@@ -18,6 +18,7 @@ import sf.browser.model.adapters.UrlSuggestionCursorAdapter;
 import sf.browser.model.items.DownloadItem;
 import sf.browser.providers.BookmarksProviderWrapper;
 import sf.browser.providers.BookmarksProviderWrapper.BookmarksSource;
+import sf.browser.ui.activities.preferences.PreferencesActivity;
 import sf.browser.ui.components.CustomWebView;
 import sf.browser.ui.components.CustomWebViewClient;
 import sf.browser.ui.runnables.FaviconUpdaterRunnable;
@@ -404,6 +405,15 @@ public class MainActivity extends Activity implements IToolbarsContainer, OnTouc
 		
 		mBubbleRightView = (ImageView) findViewById(R.id.BubbleRightView);
 		mBubbleRightView.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				setToolbarsVisibility(true);
+			}
+		});
+		mBubbleRightView.setVisibility(View.GONE);
+		
+		mBubbleLeftView = (ImageView) findViewById(R.id.BubbleLeftView);
+		mBubbleLeftView.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				setToolbarsVisibility(true);
