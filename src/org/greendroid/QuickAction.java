@@ -6,6 +6,11 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+/**
+ * 
+ * @author Sunnyfarmer
+ *
+ */
 public class QuickAction {
 
 	public Drawable mDrawable;
@@ -14,13 +19,13 @@ public class QuickAction {
 	WeakReference<View> mView;
 
 	public QuickAction(Drawable d, CharSequence title) {
-		this.mDrawable = d;
-		this.mTitle = title;
+		mDrawable = d;
+		mTitle = title;
 	}
 
 	public QuickAction(Context ctx, int drawableId, CharSequence title) {
-		this.mDrawable = ctx.getResources().getDrawable(drawableId);
-		this.mTitle = title;
+		mDrawable = ctx.getResources().getDrawable(drawableId);
+		mTitle = title;
 	}
 
 	public QuickAction(Context ctx, Drawable d, int titleId) {
@@ -32,4 +37,5 @@ public class QuickAction {
 		mDrawable = ctx.getResources().getDrawable(drawableId);
 		mTitle = ctx.getResources().getString(titleId);
 	}
+
 }

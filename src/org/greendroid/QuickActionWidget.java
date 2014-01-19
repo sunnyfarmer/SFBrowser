@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sf.browser.R;
+import sf.browser.utils.common.ActivityUtils;
+
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.view.Gravity;
@@ -16,7 +19,15 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.PopupWindow;
 
-public abstract class QuickActionWidget extends PopupWindow{
+/**
+ * Abstraction of a {@link QuickAction} wrapper. A QuickActionWidget is
+ * displayed on top of the user interface (it overlaps all UI elements but the
+ * notification bar). Clients may listen to user actions using a
+ * {@link OnQuickActionClickListener} .
+ *
+ * @author Sunnyfarmer
+ */
+public abstract class QuickActionWidget extends PopupWindow {
 
 	private static final int MEASURE_AND_LAYOUT_DONE = 1 << 1;
 
@@ -41,127 +52,191 @@ public abstract class QuickActionWidget extends PopupWindow{
 	private ArrayList<QuickAction> mQuickActions = new ArrayList<QuickAction>();
 
 	/**
-	 * Interface that may be used to listen to clicks on quick actions
-	 * @author user
+	 * Interface that may be used to listen to clicks on quick actions.
 	 *
+	 * @author Benjamin Fellous
+	 * @author Cyril Mottier
 	 */
 	public static interface OnQuickActionClickListener {
 		/**
-		 * Clients may implement this method to notify of a click on a
-		 * particular quick action
-		 * 
-		 * @param widget
-		 * @param position
+		 * Clients may implement this method to be notified of a click on a
+		 * particular quick action.
+		 *
+		 * @param position Position of the quick action that have been clicked.
 		 */
 		void onQuickActionClicked(QuickActionWidget widget, int position);
 	}
 
+	/**
+	 * Creates a new QuickActionWidget for the given context.
+	 *
+	 * @param context The context in which the QuickActionWidget is running in
+	 */
 	public QuickActionWidget(Context context) {
 		super(context);
 
-		this.mContext = context;
+		mContext = context;
 
-		this.initializeDefault();
+		initializeDefault();
 
-		this.setFocusable(true);
-		this.setTouchable(true);
-		this.setOutsideTouchable(true);
-		this.setWidth(WindowManager.LayoutParams.WRAP_CONTENT);
-		this.setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
+		setFocusable(true);
+		setTouchable(true);
+		setOutsideTouchable(true);
+		setWidth(WindowManager.LayoutParams.WRAP_CONTENT);
+		setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
 
-		final WindowManager windowManager = (WindowManager) this.mContext.getSystemService(Context.WINDOW_SERVICE);
-		this.mScreenWidth = windowManager.getDefaultDisplay().getWidth();
-		this.mScreenHeight = windowManager.getDefaultDisplay().getHeight();
+		Point p = ActivityUtils.getScreenSize(mContext);
+		mScreenWidth = p.x;
+		mScreenHeight = p.y;
 	}
 
+	/**
+	 * Equivalent to {@link PopupWindow#setContentView(View)} but with a layout
+	 * identifier.
+	 *
+	 * @param layoutId The layout identifier of the view to use.
+	 */
 	public void setContentView(int layoutId) {
-		this.setContentView(LayoutInflater.from(this.mContext).inflate(layoutId, null));
+		setContentView(LayoutInflater.from(mContext).inflate(layoutId, null));
 	}
 
 	private void initializeDefault() {
-		this.mDismissOnClick = true;
-		this.mArrowOffsetY = mContext.getResources().getDimensionPixelSize(R.dimen.gd_arrow_offset);
+		mDismissOnClick = true;
+		mArrowOffsetY = mContext.getResources().getDimensionPixelSize(R.dimen.gd_arrow_offset);
 	}
 
+	/**
+	 * Returns the arrow offset for the Y axis.
+	 *
+	 * @see {@link #setArrowOffsetY(int)}
+	 * @return The arrow offset.
+	 */
 	public int getArrowOffsetY() {
-		return this.mArrowOffsetY;
+		return mArrowOffsetY;
 	}
+
+	/**
+	 * Sets the arrow offset to a new value. Setting an arrow offset may be
+	 * particular useful to warn which view the QuickActionWidget is related to.
+	 * By setting a positive offset, the arrow will overlap the view given by
+	 * {@link #show(View)}. The default value is 5dp.
+	 *
+	 * @param offsetY The offset for the Y axis
+	 */
 	public void setArrowOffsetY(int offsetY) {
-		this.mArrowOffsetY = offsetY;
+		mArrowOffsetY = offsetY;
 	}
 
+	/**
+	 * Returns the width of the screen.
+	 *
+	 * @return The width of the screen
+	 */
 	protected int getScreenWidth() {
-		return this.mScreenWidth;
+		return mScreenWidth;
 	}
+
+	/**
+	 * Returns the height of the screen.
+	 *
+	 * @return The height of the screen
+	 */
 	protected int getScreenHeight() {
-		return this.mScreenHeight;
+		return mScreenHeight;
 	}
 
+	/**
+	 * By default, a {@link QuickActionWidget} is dismissed once the user
+	 * clicked on a {@link QuickAction}. This behavior can be changed using this
+	 * method.
+	 *
+	 * @param dismissOnClick True if you want the {@link QuickActionWidget} to
+	 * be dismissed on click else false.
+	 */
 	public void setDismissOnClick(boolean dismissOnClick) {
-		this.mDismissOnClick = dismissOnClick;
-	}
-	public boolean getDismissOnclick() {
-		return this.mDismissOnClick;
+		mDismissOnClick = dismissOnClick;
 	}
 
-	public void setOnQuickActionClickListener(OnQuickActionClickListener listener) {
-		this.mOnQuickActionClickListener = listener;
+	public boolean getDismissOnClick() {
+		return mDismissOnClick;
 	}
+
+	/**
+	 * @param listener
+	 */
+	public void setOnQuickActionClickListener(OnQuickActionClickListener listener) {
+		mOnQuickActionClickListener = listener;
+	}
+
+	/**
+	 * Add a new QuickAction to this {@link QuickActionWidget}. Adding a new
+	 * {@link QuickAction} while the {@link QuickActionWidget} is currently
+	 * being shown does nothing. The new {@link QuickAction} will be displayed
+	 * on the next call to {@link #show(View)}.
+	 *
+	 * @param action The new {@link QuickAction} to add
+	 */
 	public void addQuickAction(QuickAction action) {
 		if (action != null) {
-			this.mQuickActions.add(action);
-			this.mIsDirty = true;
-		}
-	}
-	public void clearAllQuickActions() {
-		if (!this.mQuickActions.isEmpty()) {
-			this.mQuickActions.clear();
-			this.mIsDirty = true;
+			mQuickActions.add(action);
+			mIsDirty = true;
 		}
 	}
 
 	/**
-	 * call that method to display the {@link QuickActionWidget} anchored to the
+	 * Removes all {@link QuickAction} from this {@link QuickActionWidget}.
+	 */
+	public void clearAllQuickActions() {
+		if (!mQuickActions.isEmpty()) {
+			mQuickActions.clear();
+			mIsDirty = true;
+		}
+	}
+
+	/**
+	 * Call that method to display the {@link QuickActionWidget} anchored to the
 	 * given view.
-	 * 
+	 *
 	 * @param anchor The view the {@link QuickActionWidget} will be anchored to.
 	 */
 	public void show(View anchor) {
-		final View contenView = getContentView();
 
-		if (contenView == null) {
+		final View contentView = getContentView();
+
+		if (contentView == null) {
 			throw new IllegalStateException("You need to set the content view using the setContentView method");
 		}
 
-		// Replace the background of the popup with a cleared background
-		this.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+		// Replaces the background of the popup with a cleared background
+		setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
 		final int[] loc = mLocation;
 		anchor.getLocationOnScreen(loc);
-		this.mRect.set(loc[0], loc[1], loc[0]+anchor.getWidth(), loc[1]+anchor.getHeight());
+		mRect.set(loc[0], loc[1], loc[0] + anchor.getWidth(), loc[1] + anchor.getHeight());
 
-		if (this.mIsDirty) {
-			clearAllQuickActions();
-			populateQuickActions(this.mQuickActions);
+		if (mIsDirty) {
+			clearQuickActions();
+			populateQuickActions(mQuickActions);
 		}
 
-		onMeasureAndLayout(mRect, contenView);
+		onMeasureAndLayout(mRect, contentView);
 
-		if ((this.mPrivateFlags & MEASURE_AND_LAYOUT_DONE) != MEASURE_AND_LAYOUT_DONE) {
+		if ((mPrivateFlags & MEASURE_AND_LAYOUT_DONE) != MEASURE_AND_LAYOUT_DONE) {
 			throw new IllegalStateException("onMeasureAndLayout() did not set the widget specification by calling"
 					+ " setWidgetSpecs()");
 		}
 
-		this.showArrow();
+		showArrow();
 		prepareAnimationStyle();
 		showAtLocation(anchor, Gravity.NO_GRAVITY, 0, mPopupY);
 	}
 
 	protected void clearQuickActions() {
-		if (!this.mQuickActions.isEmpty()) {
+		if (!mQuickActions.isEmpty()) {
 			onClearQuickActions();
 		}
 	}
+
 	protected void onClearQuickActions() {
 	}
 
@@ -170,15 +245,16 @@ public abstract class QuickActionWidget extends PopupWindow{
 	protected abstract void onMeasureAndLayout(Rect anchorRect, View contentView);
 
 	protected void setWidgetSpecs(int popupY, boolean isOnTop) {
-		this.mPopupY = popupY;
-		this.mIsOnTop = isOnTop;
+		mPopupY = popupY;
+		mIsOnTop = isOnTop;
 
-		this.mPrivateFlags |= MEASURE_AND_LAYOUT_DONE;
+		mPrivateFlags |= MEASURE_AND_LAYOUT_DONE;
 	}
 
 	private void showArrow() {
+
 		final View contentView = getContentView();
-		final int arrowId = this.mIsOnTop ? R.id.gdi_arrow_down : R.id.gdi_arrow_up;
+		final int arrowId = mIsOnTop ? R.id.gdi_arrow_down : R.id.gdi_arrow_up;
 		final View arrow = contentView.findViewById(arrowId);
 		final View arrowUp = contentView.findViewById(R.id.gdi_arrow_up);
 		final View arrowDown = contentView.findViewById(R.id.gdi_arrow_down);
@@ -196,46 +272,28 @@ public abstract class QuickActionWidget extends PopupWindow{
 	}
 
 	private void prepareAnimationStyle() {
+
 		final int screenWidth = mScreenWidth;
-		final boolean onTop = this.mIsOnTop;
-		final int arrowPointX = this.mRect.centerX();
+		final boolean onTop = mIsOnTop;
+		final int arrowPointX = mRect.centerX();
 
 		if (arrowPointX <= screenWidth / 4) {
-			this.setAnimationStyle(onTop ? R.style.GreenDroid_Animation_Popup_Left
+			setAnimationStyle(onTop ? R.style.GreenDroid_Animation_PopUp_Left
 					: R.style.GreenDroid_Animation_PopDown_Left);
-		} else if (arrowPointX >= 3*screenWidth / 4) {
-			this.setAnimationStyle(onTop ? R.style.GreenDroid_Animation_Popup_Right
+		} else if (arrowPointX >= 3 * screenWidth / 4) {
+			setAnimationStyle(onTop ? R.style.GreenDroid_Animation_PopUp_Right
 					: R.style.GreenDroid_Animation_PopDown_Right);
 		} else {
-			this.setAnimationStyle(onTop ? R.style.GreenDroid_Animation_Popup_Center
+			setAnimationStyle(onTop ? R.style.GreenDroid_Animation_PopUp_Center
 					: R.style.GreenDroid_Animation_PopDown_Center);
 		}
 	}
 
 	protected Context getContext() {
-		return this.mContext;
+		return mContext;
 	}
 
 	protected OnQuickActionClickListener getOnQuickActionClickListener() {
-		return this.mOnQuickActionClickListener;
+		return mOnQuickActionClickListener;
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
